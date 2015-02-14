@@ -1,4 +1,4 @@
-from node import *
+from Node import *
 
 class Queue:
     '''
@@ -64,7 +64,8 @@ class Queue:
 
 class Matrix:
     '''
-    The class for a list of Queue objects (i.e. our trolley database).
+    The class for a collection of Queue objects 
+    (i.e. our trolley database).
     '''
     
     def __init__(self, N=0, M=0):
@@ -109,6 +110,9 @@ class Matrix:
         self.d[lst].push(cart)
         
     def getsizes(self):
+        '''
+        Return a tally record of all the Queues
+        '''
         m = {}
         for k in self.d.keys():
             m[k] = self.d[k].size()

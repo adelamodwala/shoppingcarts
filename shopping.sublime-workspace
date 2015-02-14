@@ -179,6 +179,59 @@
 	},
 	"buffers":
 	[
+		{
+			"contents": "from parameters import *\nfrom helperfns import *\nfrom pylab import *\nimport random\nimport operator\nimport numpy\n\nif __name__ == '__main__':\n\n	for z in range(rep):\n		#This loop is just for repeated simulations to check for consistency\n\n		X = Matrix(N, M)  \n				#The cart 'database' containing the queues for arrival and departure\n		Out = Queue()     \n				#Initialize an empty list to record all trolleys that are currently \n				# out but not abandoned\n		Aban = Queue()    \n				#Initialize an empty list of trolleys that have been abandoned \n				#(when return time has expired)\n		\n		TARGETTIME = 10000 # overall run of the Monte Carlo simulation\n		MAXGRAPH = M # Max number of trolleys per queue\n		dobatches = True\n		timetodepart = newdeparturetime() \n		timetoarrive = 0 \n		timeremaining = TARGETTIME # Initialize countdown of time remaining\n		nextbatchtime = [newbatchreturntime(), timeremaining]\n		thetimesQ = {} # dictionary with keys being the queue\n									 # index whose values are lists that record \n									 # the time spent in a paricular state\n									 # e.g. thetimesQ[2] = [124,32,14, ..., 19] where\n									 # each item represents the time spent, thetimesQ[2][j],\n									 # of Queue 2 with j carts\n		trace = []\n		for i in range(1,N+1):\n				thetimesQ[i] = [0]*(M+1)\n		\n\n		while timeremaining > 0:\n				\n				if Aban.size() > 0 and nextbatchtime[1] - timeremaining > nextbatchtime[0]\\\n					 and dobatches:\n						#We will now return all the abandoned trolleys to the queues\n						return_aban(Aban, X)\n						nextbatchtime = [newbatchreturntime(), timeremaining]\n				\n				if timeremaining <= timetodepart and timeremaining <= timetoarrive:\n						# Finish without any further events.\n						get = X.getsizes()        \n						for i in range(1, N+1):\n								if get[i] <= MAXGRAPH:\n										thetimesQ[i][get[i]] += timeremaining\n						timeremaining = 0\n				elif sum(X.getsizes().values()) == 0 or timetodepart < timetoarrive:\n						# Await next trolley departure.\n						timeremaining = timeremaining - timetodepart\n						timetoarrive = timetoarrive - timetodepart\n						get = X.getsizes()        \n						for i in range(1, N+1):\n								if get[i] <= MAXGRAPH:\n										thetimesQ[i][get[i]] += timetodepart\n						if sum(X.getsizes().values()) > 0:       \n								# there are trolleys still in the queues\n								timetoarrive = newarrivaltime()\n								Q = X.getsizes()\n								Q = getsortdict(Q) # get a list of values sorted \n																	 # by queue index in X\n								dchosen = weighted_choice(depweight(Q)) # get queue index in X \n																												# to pop from by weights\n								cart = X.pop(dchosen+1)\n								cart.returnt = timetoarrive\n								cart.timestamp = timeremaining\n								Out.push(cart)\n								trace.append(sum(X.getsizes().values())) # total carts remaining\n						timetodepart = newdeparturetime()\n				else:    \n						# Await next trolley arrival.\n						timeremaining = timeremaining - timetoarrive\n						timetodepart = timetodepart - timetoarrive\n						get = X.getsizes()        \n						for i in range(1, N+1):\n								if get[i] <= MAXGRAPH:\n										thetimesQ[i][get[i]] += timetoarrive\n						if sum( X.getsizes().values()) < N*M and Out.size() > 0:\n								Q = X.getsizes()\n								Q = getsortdict(Q)            \n								achosen = weighted_choice(arrweight(Q))\n								w = outweights(Out)\n								cart = Out.remove(weighted_choice(w))\n								X.push(achosen+1, cart)\n								trace.append(sum(X.getsizes().values()))\n						timetoarrive = newarrivaltime()\n				if Out.size() > 0 and dobatches:\n						for item in Out.queue:\n								if item.timestamp - timeremaining > item.returnt:\n										m = Out.get_ind(item)\n										Aban.push(Out.remove(m))\n						trace.append(sum(X.getsizes().values()))\n								\n		#print X.getsizes()\n		#print thetimesQ\n		thefracs = {}\n		for i in thetimesQ.keys():\n				thefracs[i] = [x/TARGETTIME for x in thetimesQ[i]]\n\n		#print thefracs\n		batch_label = 'Batches' if dobatches else 'No Batches'\n		x = arange(0,M+1,1)\n		for j in thefracs.keys():\n		   plot(x, thefracs[j], label='queue ' + str(j))\n		xlabel('%')\n		ylabel('K')\n		title('Percent time spent with K carts, ' + batch_label)\n		legend(loc='upper left')\n		savefig('plots/queue_records.png')\n		close()\n\n		y = arange(0,len(trace),1)\n		plot(y,trace)\n		xlabel('Iteration')\n		ylabel('X.size')\n		title('Total number of carts at each iteration, ' + batch_label)\n		savefig('plots/total_carts.png')\n		close()\n				\n		#Computing P(|Q_j|>0):\n		theprobs = [0]*N\n		for i in range(1, N+1):\n				theprobs[i-1] = sum(thefracs[i][1:])\n		probvec.append(theprobs)\n			\n	J = numpy.array(probvec)\n	Jmean = numpy.mean(J, axis = 0)\n			#Get mean across columns (i.e. between runs, not within runs)\n	Jstd = numpy.std(J, axis = 0)\n			#Get standard error across columns (i.e. between runs, not within runs)\n	print J\n	print numpy.sum(J, 1) \n	print 'mean: ' + str(Jmean)\n	#print Jstd\n\n`",
+			"file": "simulation.py",
+			"file_size": 5018,
+			"file_write_time": 130680986690000000,
+			"settings":
+			{
+				"buffer_size": 4877,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "parameters.py",
+			"settings":
+			{
+				"buffer_size": 211,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "helperfns.py",
+			"settings":
+			{
+				"buffer_size": 3739,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"contents": "Searching 7 files for \"getsortdict\"\n\n/Users/adelamodwala/Development/Coding/shoppingcarts/helperfns.py:\n  124      return [float(x)/sumtot for x in weights]\n  125  \n  126: def getsortdict(d):\n  127      '''\n  128      Return a sorted list of values from dictionary d where sorting is based\n\n/Users/adelamodwala/Development/Coding/shoppingcarts/simulation.py:\n   60  							timetoarrive = newarrivaltime()\n   61  							Q = X.getsizes()\n   62: 							Q = getsortdict(Q)\n   63  							dchosen = weighted_choice(depweight(Q))\n   64  							#Q[dchosen] -= 1\n   ..\n   79  					if sum( X.getsizes().values()) < N*M and Out.size() > 0:\n   80  							Q = X.getsizes()\n   81: 							Q = getsortdict(Q)            \n   82  							achosen = weighted_choice(arrweight(Q))\n   83  							w = outweights(Out)\n\n/Users/adelamodwala/Development/Coding/shoppingcarts/Report Writeup/Project Writeup.tex:\n  464      return [float(x)/sumtot for x in weights]\n  465  \n  466: def getsortdict(d):\n  467      '''\n  468      Return a sorted list of values from dictionary d where sorting is based\n  ...\n  542                  timetoarrive = newarrivaltime()\n  543                  Q = X.getsizes()\n  544:                 Q = getsortdict(Q)\n  545                  dchosen = weighted_choice(depweight(Q))\n  546                  #Q[dchosen] -= 1\n  ...\n  561              if sum( X.getsizes().values()) < N*M and Out.size() > 0:\n  562                  Q = X.getsizes()\n  563:                 Q = getsortdict(Q)            \n  564                  achosen = weighted_choice(arrweight(Q))\n  565                  w = outweights(Out)\n\n6 matches across 3 files\n\n\nSearching 7 files for \"Matrix\"\n\n/Users/adelamodwala/Development/Coding/shoppingcarts/helperfns.py:\n  136      \n  137  if __name__ == '__main__':\n  138:     X = Matrix(3,5)\n  139      print X\n  140      Aban = Queue()\n\n/Users/adelamodwala/Development/Coding/shoppingcarts/Queue.py:\n   63              count += 1\n   64  \n   65: class Matrix:\n   66      '''\n   67      The class for a collection of Queue objects \n   ..\n   82      def __str__(self):\n   83          '''\n   84:         String representation of Matrix.\n   85          '''\n   86          if self.d.keys() == []:\n   ..\n  103      def push(self, lst, cart):\n  104          '''\n  105:         Push the node object cart into the Matrix object at queue indexed at\n  106          lst.\n  107          '''\n  ...\n  117      \n  118  if __name__ == '__main__':\n  119:     X = Matrix(3,5)\n  120      print X\n  121      cart = X.pop(2)\n\n/Users/adelamodwala/Development/Coding/shoppingcarts/simulation.py:\n   13  		#This loop is just for repeated simulations to check for consistency\n   14  \n   15: 		X = Matrix(N, M)  \n   16  				#The cart 'database' containing the queues for arrival and departure\n   17  		Out = Queue()     \n\n/Users/adelamodwala/Development/Coding/shoppingcarts/Report Writeup/Project Writeup.tex:\n   50  \\subsection*{Some Simulation Results}\n   51  \\subsubsection*{Code Implementation and Challenges}\n   52: I had originally designed a quasi-object oriented environment in R where carts were to be data frames containing original indices in matrix form (so the first cart facing the customer from $Q_j$ would have indices $(j,M))$, time of departure, and expected arrival time. Furthermore, home would be a list object containing other lists, i.e. the queues as stacks, whose elements were the cart data frames. Unfortunately, this design proved to be unstable as some elements of the data frame would disappear and the code would break down. Therefore, the code was implemented in a neater fasion in Python where I was able to use Node objects for carts and stacks for our queues at home, and a dictionary/hash table for home itself. This allowed me to write methods relating specifically to each data type, rather than depending on some pre-existing function and having to worry about code failure.\n   53  \n   54  The coding for each data type is given in Part A of the Appendix. For the carts, we use the Node data structure where we can record the indices, time cart was taken out by a customer (timestamp), the expected time to return for the cart (returnt), and a boolean to identify if that cart is currently out of home (True) or not (False). Furthermore, we want to be able to compare carts for equality, i.e. if one cart object is the same based on its indices. There is also a method for string representation where we get all the information about the cart (indices, timestamp, returntime, out).\n   55  \n   56: For the queues in home, we essentially have a list that can contain several node/cart objects. The queues are defined as stacks with a Last In First Out (LIFO) treatment for nodes. Finally, home is a Matrix data type (it's just a name as the data type is a dictionary of queues), where each key of the dictionary maps to a queue. For instance, the $i^{th}$ queue has key $i \\in \\{ 1,...,N\\}$ with mapped value being a stack object (the queue) containing nodes (carts). Each stack object has methods to pop the last element, push in a new element at the end, a length method (size) to check the number of nodes in the queue, a remove method to remove a node at some index in the stack, and a find method to search for a given node object. Many of these methods will be used in our more complicated model when we build stacks for carts that are out and carts that have been abandoned, but for now we will use the Matrix type to create home (X) and a stack for carts that have been taken out (Out).\n   57  \n   58  The helper functions we've used include the computation of departure weights for the last carts in each non-empty queue (the carts facing the customer), arrival weights for non-full queues (i.e. queues with size less than $M$), a function that returns indices based on such weights, and some functions for creating new arrival and departure times of the carts. We also have a function called outweights that computes the weights of the carts that have been taken out by giving the largest weight to the cart with the smallest return time. More precisely, we have\n   ..\n  281  \\begin{singlespace}\n  282  \\begin{verbatim}\n  283: class Matrix:\n  284      '''\n  285      The class for a list of Queue objects (i.e. our trolley database).\n  ...\n  299      def __str__(self):\n  300          '''\n  301:         String representation of Matrix.\n  302          '''\n  303          if self.d.keys() == []:\n  ...\n  320      def push(self, lst, cart):\n  321          '''\n  322:         Push the node object cart into the Matrix object at queue indexed at\n  323          lst.\n  324          '''\n  ...\n  491      #This loop is just for repeated simulations to check for consistency\n  492  \n  493:     X = Matrix(N, M)  \n  494          #The cart 'database' containing the queues for arrival and departure\n  495      Out = Queue()     \n\n13 matches across 4 files\n",
+			"settings":
+			{
+				"buffer_size": 6872,
+				"line_ending": "Unix",
+				"name": "Find Results",
+				"scratch": true
+			}
+		},
+		{
+			"file": "Node.py",
+			"settings":
+			{
+				"buffer_size": 1055,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "Queue.py",
+			"settings":
+			{
+				"buffer_size": 3030,
+				"line_ending": "Windows"
+			}
+		}
 	],
 	"build_system": "",
 	"command_palette":
@@ -217,6 +270,7 @@
 	],
 	"file_history":
 	[
+		"/Users/adelamodwala/Development/Coding/shoppingcarts/Report Writeup/Project Writeup.tex",
 		"/Users/adelamodwala/Development/Sites/lulu/wp-content/themes/lulu/index.php",
 		"/Users/adelamodwala/Development/Sites/lulu/wp-content/themes/lulu/assets/stylesheets/screen.css",
 		"/Users/adelamodwala/Development/Sites/lulu/wp-content/themes/lulu/assets/javascripts/ScrollToPlugin.js",
@@ -343,12 +397,11 @@
 		"/Users/adelamodwala/Development/Sites/Soundmelon/db/migrate/20141009021255_add_devise_to_users.rb",
 		"/Users/adelamodwala/Development/Sites/Soundmelon/public/assets/functions/_px-to-em.css",
 		"/Users/adelamodwala/Development/Sites/Soundmelon/.redcar/tags",
-		"/Users/adelamodwala/Development/Sites/Soundmelon/app/views/users/_terms_copy.html.haml",
-		"/Users/adelamodwala/Development/Sites/Soundmelon/app/views/users/_favorites_list.html.haml"
+		"/Users/adelamodwala/Development/Sites/Soundmelon/app/views/users/_terms_copy.html.haml"
 	],
 	"find":
 	{
-		"height": 29.0
+		"height": 37.0
 	},
 	"find_in_files":
 	{
@@ -363,6 +416,13 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"trace",
+			"thetimesQ",
+			"M",
+			"N",
+			"Matrix",
+			"getsortdict",
+			"operator",
 			"phq.stagebot.net",
 			"bach/phqdev",
 			".contact-form {",
@@ -483,14 +543,7 @@
 			"divider",
 			".plus-minus",
 			"vertical-center",
-			"vertical-align",
-			".input-label",
-			"clear",
-			"%input",
-			"input",
-			"label",
-			"carlaw",
-			"55px"
+			"vertical-align"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -596,8 +649,275 @@
 	"groups":
 	[
 		{
+			"selected": 0,
 			"sheets":
 			[
+				{
+					"buffer": 0,
+					"file": "simulation.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 4877,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								4877,
+								4877
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 2205.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "parameters.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 211,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								79,
+								79
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "helperfns.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 3739,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 6872,
+						"regions":
+						{
+							"match":
+							{
+								"flags": 112,
+								"regions":
+								[
+									[
+										176,
+										187
+									],
+									[
+										454,
+										465
+									],
+									[
+										678,
+										689
+									],
+									[
+										955,
+										966
+									],
+									[
+										1197,
+										1208
+									],
+									[
+										1464,
+										1475
+									],
+									[
+										1785,
+										1791
+									],
+									[
+										1957,
+										1963
+									],
+									[
+										2131,
+										2137
+									],
+									[
+										2310,
+										2316
+									],
+									[
+										2450,
+										2456
+									],
+									[
+										2676,
+										2682
+									],
+									[
+										3133,
+										3139
+									],
+									[
+										4715,
+										4721
+									],
+									[
+										5426,
+										5432
+									],
+									[
+										6159,
+										6165
+									],
+									[
+										6355,
+										6361
+									],
+									[
+										6534,
+										6540
+									],
+									[
+										6716,
+										6722
+									]
+								],
+								"scope": ""
+							}
+						},
+						"selection":
+						[
+							[
+								1625,
+								1625
+							]
+						],
+						"settings":
+						{
+							"detect_indentation": false,
+							"line_numbers": false,
+							"output_tag": 2,
+							"result_base_dir": "",
+							"result_file_regex": "^([A-Za-z\\\\/<].*):$",
+							"result_line_regex": "^ +([0-9]+):",
+							"scroll_past_end": true,
+							"syntax": "Packages/Default/Find Results.hidden-tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 632.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "Node.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1055,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								363,
+								363
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 125.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 5,
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "Queue.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 3030,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2757,
+								2757
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 1890.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				}
 			]
 		}
 	],
@@ -643,7 +963,7 @@
 	"project": "shopping.sublime-project",
 	"replace":
 	{
-		"height": 54.0
+		"height": 68.0
 	},
 	"save_all_on_build": true,
 	"select_file":
@@ -652,16 +972,20 @@
 		"selected_items":
 		[
 			[
+				"",
+				"simulation.py"
+			],
+			[
+				"par",
+				"parameters.py"
+			],
+			[
 				"inde",
 				"theme/views/home/index.haml"
 			],
 			[
 				"qu",
 				"~/Development/Sites/wordpress_replace_query.sql"
-			],
-			[
-				"",
-				"theme/assets/stylesheets/_home.scss"
 			],
 			[
 				"base",
@@ -1158,10 +1482,6 @@
 			[
 				"users_control",
 				"app/controllers/users_controller.rb"
-			],
-			[
-				"music-admin",
-				"app/assets/stylesheets/music-admin.scss"
 			]
 		],
 		"width": 0.0
